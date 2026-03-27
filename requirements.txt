@@ -1,0 +1,9 @@
+torch
+transformers
+accelerate
+pandas
+numpy
+tqdm
+dill
+faiss-cpu
+colbert-ai
