@@ -1,36 +1,30 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from src.utils import extract_json_dict, setup_logger, ensure_dir
 import json
-import torch
-import gc
 import os
+from openai import OpenAI
+from dotenv import load_dotenv
+from pathlib import Path
+
+# api key load from .env file (src/modules/inferencer.py → parents[2] = HGRAG/)
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
 
 class Inferencer:
-    def __init__(self, model_id, resp_path, dataloader, max_new_tokens=1000, device='auto', temperature=None, log_path='inference.log'):
+    # json mode : openai model에서 json 형식으로 안정적 출력 가능 (true : NER, false : QA)
+    def __init__(self, model_id, resp_path, dataloader, max_new_tokens=1000, device='auto', temperature=None, log_path='inference.log', json_mode=False):
         self.logger = setup_logger(__name__, log_path)
-        self.logger.info("Loading model...")
-        self.tokenizer = AutoTokenizer.from_pretrained(model_id, torch_dtype="auto", padding_side="left")
-        self.tokenizer.pad_token = self.tokenizer.eos_token
-        self.model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype="auto", device_map=device)
+        self.logger.info("Init OpenAI client...")
+        self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        self.model_id = model_id
+        self.max_new_tokens = max_new_tokens
+        self.temperature = 0 if temperature is None else temperature
+        self.json_mode = json_mode
 
-        pipe_kwargs = dict(
-            model=self.model,
-            tokenizer=self.tokenizer,
-            max_new_tokens=max_new_tokens,
-        )
-
-        if temperature is not None:
-            pipe_kwargs.update(
-                do_sample=temperature > 0,
-                temperature=temperature
-            )
-
-        self.pipe = pipeline("text-generation", **pipe_kwargs)
-
-        self.logger.info("Loading data...")
         self.dataloader = dataloader
         self.resp_path = resp_path
         self.logger.info(f"Loading data from {self.dataloader.datapath}")
+
+
 
     def infer(self):
         self.logger.info("Start infering...")
@@ -41,7 +35,8 @@ class Inferencer:
                 try:
                     self.logger.info(f"Processing batch {i}, size {len(bdata)}...")
                     data = self._preprocess(bdata)
-                    out = self.pipe(data, batch_size=len(data), return_full_text=False)
+                    texts = [self._generate_one(messages) for messages in data]
+                    out = [[{"generated_text": t}] for t in texts]
                     res = self._postprocess(bdata, out)
                     for item in res:
                         f.write(json.dumps(item, ensure_ascii=False) + "\n")
@@ -68,10 +63,19 @@ class Inferencer:
 
         return results
 
-    def __del__(self):
-        del self.model, self.tokenizer, self.pipe, self.dataloader, self.logger
-        gc.collect()
-        torch.cuda.empty_cache()
+    def _generate_one(self, messages):
+        kwargs = dict(
+            model=self.model_id,
+            messages=messages,
+            temperature=self.temperature,
+            max_tokens=self.max_new_tokens,
+        )
+        if self.json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
+
+        resp = self.client.chat.completions.create(**kwargs)
+        return resp.choices[0].message.content or ""
+
 
 
 class QAInferencer(Inferencer):

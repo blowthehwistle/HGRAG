@@ -7,3 +7,5 @@ tqdm
 dill
 faiss-cpu
 colbert-ai
+openai
+python-dotenv

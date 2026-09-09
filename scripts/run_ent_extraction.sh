@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-MODEL_ID=/home/user/llms/Llama-3.3-70B-Instruct
+MODEL_ID=gpt-4o-mini
 DATA_PATH=data/samples/samples_id.json
 CORPUS_PATH=data/samples/samples_corpus_id.json
 Q_NER_RESP_PATH=output/ner/samples/q_ner_resp.jsonl

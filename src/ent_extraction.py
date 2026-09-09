@@ -2,13 +2,13 @@ import argparse
 from src.modules.inferencer import Inferencer
 from src.modules.dataload import QueryDataLoader, CorpusDataLoader
 
-def extract(model_id, data_path, resp_path, max_batch_tokens, type, max_new_tokens=1000, temperature=0, device='auto', log_path='../logs/ent_extract.log'):
+def extract(model_id, data_path, resp_path, max_batch_tokens, type, max_new_tokens=1000, temperature=0, device='auto', log_path='../logs/ent_extract.log', json_mode=True):
     if type == 'Query':
         dataloader = QueryDataLoader(data_path, max_batch_tokens, prompt_key='QNER')
     elif type == 'Corpus':
         dataloader = CorpusDataLoader(data_path, max_batch_tokens, prompt_key='CNER')
 
-    inferencer = Inferencer(model_id, resp_path, dataloader, max_new_tokens=max_new_tokens, device=device, temperature=temperature, log_path=log_path)
+    inferencer = Inferencer(model_id, resp_path, dataloader, max_new_tokens=max_new_tokens, device=device, temperature=temperature, log_path=log_path, json_mode=json_mode)
     inferencer.infer()
 
 
@@ -37,5 +37,6 @@ if __name__ == "__main__":
         max_new_tokens=args.max_new_tokens,
         temperature=args.temperature,
         device=args.device,
-        log_path=args.log_path
+        log_path=args.log_path,
+        json_mode = True
     )

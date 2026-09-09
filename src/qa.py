@@ -2,9 +2,9 @@ import argparse
 from src.modules.inferencer import QAInferencer
 from src.modules.dataload import RetDocsDataLoader
 
-def qa(model_id, data_path, resp_path, max_batch_tokens=1000, prompt_key='QA', max_new_tokens=1000, temperature=0, device='auto', log_path='../logs/qa.log'):
+def qa(model_id, data_path, resp_path, max_batch_tokens=1000, prompt_key='QA', max_new_tokens=1000, temperature=0, device='auto', log_path='../logs/qa.log', json_mode=False):
     dataloader = RetDocsDataLoader(data_path, max_batch_tokens, prompt_key=prompt_key)
-    inferencer = QAInferencer(model_id, resp_path, dataloader, max_new_tokens=max_new_tokens, device=device, temperature=temperature, log_path=log_path)
+    inferencer = QAInferencer(model_id, resp_path, dataloader, max_new_tokens=max_new_tokens, device=device, temperature=temperature, log_path=log_path, json_mode=json_mode)
     inferencer.infer()
 
 
@@ -32,5 +32,6 @@ if __name__ == "__main__":
         max_new_tokens=args.max_new_tokens,
         temperature=args.temperature,
         device=args.device,
-        log_path=args.log_path
+        log_path=args.log_path,
+        json_mode = False
     )

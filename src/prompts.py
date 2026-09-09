@@ -49,11 +49,14 @@ Radio City recently forayed into New Media in May 2008 with the launch of a musi
     ]
 }
 
+# QNER : Query Named Entity Recognition
+# modified : return the result in the format -> in JSON format (to use openai json_mode) 
 PROMPTS["QNER"] = \
     [
-        {"role": "system", "content": """You are a very effective keywords extraction system. Please extract all named entities that are important for solving the questions below. Return the result in the format {"entities": [#list_of_entities]}."""},
+        {"role": "system", "content": """You are a very effective keywords extraction system. Please extract all named entities that are important for solving the questions below. Return the result in JSON format {"entities": [#list_of_entities]}."""},
     ]
 
+#CNER : Corpus Named Entity Recognition
 PROMPTS["CNER"] =\
     [
         {"role": "system", "content":"""Your task is to extract named entities from the given paragraph. 
