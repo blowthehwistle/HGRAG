@@ -35,13 +35,73 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-The repository includes sample data under `data/samples/raw/`. Run the sample pipeline in the following order:
+### OpenAI setup 
+
+
+1. `HGRAG/.env` (gitignored) 파일 만들고 다음과 같이 입력:
+
+```bash
+OPENAI_API_KEY=sk-... 
+```
+
+2. 모델 변경 (default below):
+
+- `scripts/run_ent_extraction.sh` → `MODEL_ID=gpt-4o-mini`
+- `scripts/run_qa.sh` → `MODEL_ID=gpt-4o-mini`
+
+3. Quick smoke test for entity extraction:
+
+```bash
+mkdir -p /tmp/hgrag_smoke
+python3 - <<'EOF'
+import json
+from pathlib import Path
+Path("/tmp/hgrag_smoke/q.json").write_text(json.dumps([
+    {"qid": 0, "question": "What city is the Eiffel Tower located in?"}
+]), encoding="utf-8")
+Path("/tmp/hgrag_smoke/c.json").write_text(json.dumps([
+    {"did": 0, "title": "Paris",
+     "text": "Paris is the capital of France. The Eiffel Tower is there."}
+]), encoding="utf-8")
+EOF
+
+python3 -m src.ent_extraction \
+  --model_id gpt-4o-mini \
+  --data_path /tmp/hgrag_smoke/q.json \
+  --resp_path /tmp/hgrag_smoke/q_ner.jsonl \
+  --type Query \
+  --max_batch_tokens 1000 \
+  --max_new_tokens 200 \
+  --log_path /tmp/hgrag_smoke/ner.log
+
+python3 -m src.ent_extraction \
+  --model_id gpt-4o-mini \
+  --data_path /tmp/hgrag_smoke/c.json \
+  --resp_path /tmp/hgrag_smoke/c_ner.jsonl \
+  --type Corpus \
+  --max_batch_tokens 1000 \
+  --max_new_tokens 200 \
+  --log_path /tmp/hgrag_smoke/ner.log
+
+cat /tmp/hgrag_smoke/q_ner.jsonl   # expect key: entities
+cat /tmp/hgrag_smoke/c_ner.jsonl   # expect key: named_entities
+```
+
+Notes:
+
+- NER uses OpenAI `response_format=json_object`; prompts must mention the word `json`.
+- QNER output key: `entities`. CNER output key: `named_entities`.
+- Run commands from the `HGRAG/` directory so `.env` and `python -m src.*` resolve correctly.
+
+### Sample pipeline
+
+The repository includes sample data under `data/samples/raw/`. Run in order:
 
 ```bash
 bash scripts/run_data_processing.sh
 bash scripts/run_ent_extraction.sh
 bash scripts/run_build_hgraph.sh
-bash scripts/run_retrieval.sh
+bash scripts/run_retrieval.sh      # requires local embedding checkpoint
 bash scripts/run_grag_retrieval.sh
 bash scripts/run_qa.sh
 bash scripts/run_evaluation.sh
