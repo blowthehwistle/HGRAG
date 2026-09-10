@@ -53,7 +53,7 @@ OPENAI_API_KEY=sk-...
 
 ```bash
 mkdir -p /tmp/hgrag_smoke
-python3 - <<'EOF'
+python - <<'EOF'
 import json
 from pathlib import Path
 Path("/tmp/hgrag_smoke/q.json").write_text(json.dumps([
@@ -65,7 +65,7 @@ Path("/tmp/hgrag_smoke/c.json").write_text(json.dumps([
 ]), encoding="utf-8")
 EOF
 
-python3 -m src.ent_extraction \
+python -m src.ent_extraction \
   --model_id gpt-4o-mini \
   --data_path /tmp/hgrag_smoke/q.json \
   --resp_path /tmp/hgrag_smoke/q_ner.jsonl \
@@ -74,7 +74,7 @@ python3 -m src.ent_extraction \
   --max_new_tokens 200 \
   --log_path /tmp/hgrag_smoke/ner.log
 
-python3 -m src.ent_extraction \
+python -m src.ent_extraction \
   --model_id gpt-4o-mini \
   --data_path /tmp/hgrag_smoke/c.json \
   --resp_path /tmp/hgrag_smoke/c_ner.jsonl \
