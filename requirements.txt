@@ -7,5 +7,7 @@ tqdm
 dill
 faiss-cpu
 colbert-ai
+einops
 openai
 python-dotenv
+Pillow>=9.1

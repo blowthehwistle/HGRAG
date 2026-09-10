@@ -44,3 +44,6 @@ Thumbs.db
 .vscode/
 *.swp
 *~
+
+AGENT.md
+CODEBASE.md

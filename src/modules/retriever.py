@@ -17,6 +17,15 @@ from src.prompts import PROMPTS
 from src.utils import ensure_dir
 
 
+from openai import OpenAI
+from dotenv import load_dotenv
+from pathlib import Path
+import os
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
+
+
 class ColbRetriever:
     def __init__(self, checkpoint_path, work_path, experiment="colbertv2"):
         self.checkpoint_path = checkpoint_path
@@ -318,8 +327,10 @@ class Retriever:
 
 
     def __del__(self):
-        del self.plm
-        torch.cuda.empty_cache()
+        if hasattr(self, "plm"):
+            del self.plm
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
 
 class NVERetriever(Retriever):
@@ -338,3 +349,25 @@ class NVERetriever(Retriever):
 
         all_vecs = np.vstack(all_vecs)
         return all_vecs
+
+class OpenAIEmbedRetriever(Retriever):
+    
+    def __init__(self, model_id="text-embedding-3-small", device="cpu", batch_size=64):
+        # GPU/로컬 모델 로드 안 함
+        self.model_id = model_id
+        self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        self.batch_size = batch_size
+        self.device = device  # 안 써도 OK, 시그니처 맞춤용
+
+    def _encode(self, strs, max_token, query=False, max_length=None, pool="mean", prompt=None):
+        # query/prompt는 OpenAI에선 무시해도 됨
+        all_vecs = []
+        for i in range(0, len(strs), self.batch_size):
+            batch = strs[i:i + self.batch_size]
+            # 빈 문자열 방지
+            batch = [s if s.strip() else " " for s in batch]
+            resp = self.client.embeddings.create(model=self.model_id, input=batch)
+            # resp.data 순서가 input과 같다고 보장됨
+            vecs = [d.embedding for d in sorted(resp.data, key=lambda x: x.index)]
+            all_vecs.append(np.asarray(vecs, dtype=np.float32))
+        return np.vstack(all_vecs)

@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e
 
-MODEL_PATH=/home/user/llms/NV-Embed-v2
+MODEL_PATH=text-embedding-3-small
 K=20000
 QUERY_CHUNK=10
 CORPUS_CHUNK=4
 DEVICE=cuda
-MAX_TOKEN=1000
-MODEL_TYPE=nve
+MAX_TOKEN=1000   # batch size ~1 (avoid NV-Embed OOM on 16GB)
+MODEL_TYPE=openai
 
 
 

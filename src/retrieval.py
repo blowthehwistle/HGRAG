@@ -1,9 +1,16 @@
-from src.modules.retriever import Retriever, NVERetriever
+from src.modules.retriever import Retriever, NVERetriever, OpenAIEmbedRetriever
 import os
 import argparse
 
 def retrieval(model_path, corpus_path, query_path, corpus_vecs_path, query_vecs_path, retrival_res_path, k=100, query_chunk=10, corpus_chunk=4, reindex=False, device='cuda', max_token=100, prompt='query2passages', model_type='nve'):
-    R = NVERetriever(model_path, device) if model_type == 'nve' else Retriever(model_path, device)
+    
+    if model_type == 'openai':
+        R = OpenAIEmbedRetriever(model_path, device)
+    elif model_type == 'nve':
+        R = NVERetriever(model_path, device) 
+    else: 
+        R = Retriever(model_path, device)
+
     if reindex:
         q = False if prompt is None else True
         print('Indexing query')
@@ -38,7 +45,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--max_token", type=int, default=100)
     parser.add_argument("--prompt", default=None)
-    parser.add_argument("--model_type", default="nve", choices=["nve", "contriever"])
+    parser.add_argument("--model_type", default="openai", choices=["nve", "contriever", "openai"])
 
     args = parser.parse_args()
 
