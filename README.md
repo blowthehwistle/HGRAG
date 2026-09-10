@@ -93,21 +93,23 @@ Notes:
 - QNER output key: `entities`. CNER output key: `named_entities`.
 - Run commands from the `HGRAG/` directory so `.env` and `python -m src.*` resolve correctly.
 
-### Sample pipeline
+### Sample / full pipeline
 
-The repository includes sample data under `data/samples/raw/`. Run in order:
+All run scripts take an optional dataset argument: `samples` (default) | `musique` | `hotpot` | `2wiki`.
 
 ```bash
-bash scripts/run_data_processing.sh
-bash scripts/run_ent_extraction.sh
-bash scripts/run_build_hgraph.sh
-bash scripts/run_retrieval.sh      # requires local embedding checkpoint
-bash scripts/run_grag_retrieval.sh
-bash scripts/run_qa.sh
-bash scripts/run_evaluation.sh
+DATASET=hotpot   # or samples / musique / 2wiki
+
+bash scripts/run_data_processing.sh "$DATASET"
+bash scripts/run_ent_extraction.sh "$DATASET"   # OpenAI NER; expensive on full corpora
+bash scripts/run_build_hgraph.sh "$DATASET"
+bash scripts/run_retrieval.sh "$DATASET"        # OpenAI text-embedding-3-small
+bash scripts/run_grag_retrieval.sh "$DATASET"
+bash scripts/run_qa.sh "$DATASET"               # OpenAI QA
+bash scripts/run_evaluation.sh "$DATASET"
 ```
 
-This produces intermediate files under `data/samples/`, `output/`, and `logs/`.
+Outputs go under `data/{dataset}/`, `output/**/{dataset}/`, and `logs/`.
 
 ## Citation
 

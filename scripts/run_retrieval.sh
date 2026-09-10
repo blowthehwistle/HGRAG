@@ -1,25 +1,57 @@
 #!/bin/bash
 set -e
 
+# Usage: bash scripts/run_retrieval.sh [dataset]
+# dataset: samples | musique | hotpot | 2wiki  (default: samples)
+DATASET="${1:-samples}"
+
+case "$DATASET" in
+  samples|musique|hotpot|2wiki) ;;
+  *)
+    echo "Error: unknown dataset '${DATASET}'" >&2
+    echo "Choose: samples | musique | hotpot | 2wiki" >&2
+    exit 1
+    ;;
+esac
+
 MODEL_PATH=text-embedding-3-small
 K=20000
 QUERY_CHUNK=10
 CORPUS_CHUNK=4
 DEVICE=cuda
-MAX_TOKEN=1000   # batch size ~1 (avoid NV-Embed OOM on 16GB)
+MAX_TOKEN=1000
 MODEL_TYPE=openai
 
-
-
 # query ent to corpus ent
+Q_NER_RESP_PATH=output/ner/${DATASET}/q_ner_resp.jsonl
+Q_ENT_ID_PATH=output/ret/${DATASET}/q_ent_id.tsv
+C_ENT_ID_PATH=output/ret/${DATASET}/c_ent_id.tsv
+QE_PATH=output/ret/${DATASET}/qe.json
+Q_ENT_VECS_PATH=output/vecs/${DATASET}/q_ent_vecs.pkl
+C_ENT_VECS_PATH=output/vecs/${DATASET}/c_ent_vecs.pkl
+E2E_RET_PATH=output/ret/${DATASET}/e2e_ret.json
 
-Q_NER_RESP_PATH=output/ner/samples/q_ner_resp.jsonl
-Q_ENT_ID_PATH=output/ret/samples/q_ent_id.tsv
-C_ENT_ID_PATH=output/ret/samples/c_ent_id.tsv
-QE_PATH=output/ret/samples/qe.json
-Q_ENT_VECS_PATH=output/vecs/samples/query_vecs.pkl
-C_ENT_VECS_PATH=output/vecs/samples/doc_vecs.pkl
-E2E_RET_PATH=output/ret/samples/e2e_ret.json
+# query to doc
+QUERY_TSV_PATH=output/ret/${DATASET}/${DATASET}_query.tsv
+DOC_TSV_PATH=output/ret/${DATASET}/${DATASET}_doc.tsv
+QUERY_VECS_PATH=output/vecs/${DATASET}/query_vecs.pkl
+DOC_VECS_PATH=output/vecs/${DATASET}/doc_vecs.pkl
+Q2D_RET_PATH=output/ret/${DATASET}/q2d_ret.json
+
+echo "[retrieval] dataset=${DATASET} model=${MODEL_PATH} type=${MODEL_TYPE}"
+
+if [[ ! -f "$Q_NER_RESP_PATH" ]]; then
+  echo "Error: missing ${Q_NER_RESP_PATH}" >&2
+  exit 1
+fi
+if [[ ! -f "$C_ENT_ID_PATH" ]]; then
+  echo "Error: missing ${C_ENT_ID_PATH}. Run: bash scripts/run_build_hgraph.sh ${DATASET}" >&2
+  exit 1
+fi
+if [[ ! -f "$QUERY_TSV_PATH" || ! -f "$DOC_TSV_PATH" ]]; then
+  echo "Error: missing query/doc tsv. Run: bash scripts/run_data_processing.sh ${DATASET}" >&2
+  exit 1
+fi
 
 python -m src.data_processing \
     --task qner_res_process \
@@ -29,7 +61,6 @@ python -m src.data_processing \
 
 
 # q_ent to doc_ent
-
 python -m src.retrieval \
     --model_path "$MODEL_PATH" \
     --corpus_path "$C_ENT_ID_PATH" \
@@ -47,14 +78,6 @@ python -m src.retrieval \
 
 
 # query to doc
-
-QUERY_TSV_PATH=output/ret/samples/samples_query.tsv
-DOC_TSV_PATH=output/ret/samples/samples_doc.tsv
-QUERY_VECS_PATH=output/vecs/samples/query_vecs.pkl
-DOC_VECS_PATH=output/vecs/samples/doc_vecs.pkl
-Q2D_RET_PATH=output/ret/samples/q2d_ret.json
-
-
 python -m src.retrieval \
     --model_path "$MODEL_PATH" \
     --corpus_path "$DOC_TSV_PATH" \
